@@ -59,14 +59,20 @@ run_id=$(
 duvo runs messages "$run_id" --follow
 ```
 
-**Option 3 — process NDJSON programmatically:** `--follow --json` emits each message as a JSON object on its own line.
+**Option 3 — process NDJSON programmatically:** capture the run ID as in Option 2, then `runs messages --follow --json` emits each message as a JSON object on its own line until the run ends.
 
 ```bash
-duvo runs start --agent "$agent_id" --message "Process today's queue." --follow --json \
+run_id=$(
+  duvo runs start --agent "$agent_id" --message "Process today's queue." --json \
+  | jq -r .run.id
+)
+duvo runs messages "$run_id" --follow --json \
   | while IFS= read -r line; do
       echo "$line" | jq -r '.text_content // empty'
     done
 ```
+
+Don't combine `--follow --json` on `runs start` itself: with `--json` it prints the start response and exits without following.
 
 For event-driven workflows, pass `--webhook-url` to `runs start` and
 receive events asynchronously rather than polling or following.
